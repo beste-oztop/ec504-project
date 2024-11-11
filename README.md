@@ -28,3 +28,22 @@ The primary objective of this project is to:
 * Analyze runtime performance for each data structure under uniform test conditions, focusing on time complexity for the key operations listed above.
 
 We plan to identify the most efficient data structure based on the performance metrics. Once determined, we will apply the chosen structure to a real-world application, which will be finalized after the benchmarking stage.
+
+
+## Fibonacci Heap
+Fibonacci Heaps provide an efficient data structure for priority queue operations with the following amortized time complexities: O(1) for insert, find-min, and decrease-key, and O(log n) for delete and extract-min. The primary advantage of Fibonacci Heaps lies in their ability to perform decrease-key operations very efficiently, making them suitable for algorithms like Dijkstra's and Prim's.
+Fibonacci Heaps consist of a collection of heap-ordered trees, with each tree adhering to the min-heap property. These trees are linked together using a circular doubly linked list. The structure is designed to perform certain operations more efficiently than other heap variants by utilizing a lazy approach to restructuring. For instance, Fibonacci Heaps postpone the consolidation of trees until it is necessary, reducing the time complexity for many operations.
+* We implemented Fibonacci Heap in FibonacciHeap.h and FibonacciHeap.cpp
+* We have tested the implementation by using main.cpp for an example on a Fibonacci heap (from lectures).
+
+## Rank-Pairing Heap
+Rank-pairing Heaps support the same operations with similar amortized time complexity: O(1) for insert, find-min, and decrease-key, and O(log n) for delete and extract-min as Fibonacci Heaps.
+Unlike Fibonacci Heaps, Rank-pairing Heaps do not require complex adjustments like cascading cuts. Instead, they rely on a simpler rank-based system that adjusts the ranks of nodes dynamically during the operations, resulting in a more flexible tree structure that avoids costly restructuring. This makes Rank-pairing Heaps simpler and easier to implement yet highly efficient.
+* We implemented Rank-Pairing Heap in RankPairingHeap.h
+* We have tested the implementation by using Test.cpp for a couple of operations on a Rank-Pairing heap
+
+
+## Violation Heap
+Violation Heaps are a specialized variant of heap data structures designed to handle specific constraints on heap operations, particularly for cases where violations (or exceptions to heap properties) are allowed temporarily but need to be corrected efficiently. These heaps support similar operations to other heap structures but allow for certain violations in the tree structure.
+The operations in Violation Heaps are similar in terms of time complexity to Fibonacci Heaps.
+* We implemented Violation Heap in ViolationHeap.h and ViolationHeap.cpp
