@@ -28,3 +28,9 @@ The primary objective of this project is to:
 * Analyze runtime performance for each data structure under uniform test conditions, focusing on time complexity for the key operations listed above.
 
 We plan to identify the most efficient data structure based on the performance metrics. Once determined, we will apply the chosen structure to a real-world application, which will be finalized after the benchmarking stage.
+
+## Rank-Pairing Heap
+Rank-pairing Heaps support the same operations with similar amortized time complexity: O(1) for insert, find-min, and decrease-key, and O(log n) for delete and extract-min as Fibonacci Heaps.
+Unlike Fibonacci Heaps, Rank-pairing Heaps do not require complex adjustments like cascading cuts. Instead, they rely on a simpler rank-based system that adjusts the ranks of nodes dynamically during the operations, resulting in a more flexible tree structure that avoids costly restructuring. This makes Rank-pairing Heaps simpler and easier to implement yet highly efficient.
+* We implemented Rank-Pairing Heap in RankPairingHeap.h
+* We have tested the implementation by using Test.cpp for a couple of operations on a Rank-Pairing heap
