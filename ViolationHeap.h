@@ -1,54 +1,28 @@
-#ifndef VIOLATIONHEAP
-#define VIOLATIONHEAP
+#ifndef VIOLATIONHEAP_H
+#define VIOLATIONHEAP_H
 
-#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
-// Define structures for f_node and f_heap
-struct f_node {
-    struct f_node *up;
-    struct f_node *down;
-    struct f_node *left;
-    struct f_node *right;
-    int vertex;
-    int data;
-    int children;
-    char colored;
-};
+typedef struct v_node *v_node_T;
+typedef struct v_heap *v_heap_T;
 
-struct f_heap {
-    f_node *min;
-    int num_elem;
-};
-
-// Function prototypes with unique names
-f_heap* create_f_heap();  // Renamed from f_heap_new
-void free_f_heap(f_heap **heap);  // Renamed from f_heap_free
-f_node* insert_into_f_heap(f_heap *heap, int value, int ver);  // Renamed from f_heap_insert
-void merge_heaps(f_heap *heap1, f_heap *heap2);  // Merging two heaps
-void print_root_list(f_heap *heap);  // Print root list of heap
-int get_f_heap_min(f_heap *heap);  // Renamed from f_heap_min
-int extract_f_heap_min(f_heap *heap);  // Renamed from f_extract_min
-void print_f_heap(f_heap *heap);  // Renamed from print_heap
-void decrease_key_in_f_heap(f_heap *heap, f_node *node, int value);  // Renamed from f_heap_decrease_key
-
-class ViolationHeap {
-private:
-    f_heap *heap;
-
-    f_node* findNode(int value);
-    f_node* findNodeRecursive(f_node *node, int value);
-
-public:
-    ViolationHeap();
-    ~ViolationHeap();
-
-    void Insert(int value, int ver = 0);
-    int ExtractMin();
-    void DecreaseKey(int oldValue, int newValue);
-    void Delete(int value);
-    void PrintRootList();
-    void PrintHeap();
-    int Min() const;
-};
-
-#endif // VIOLATIONHEAP
+//frees all memory allocated in the use of the heap the sets *heap to NULL;
+void v_heap_free(v_heap_T *heap);
+// insert a node into the heap with value and ver specified and returns a 
+// pionter to that node;
+v_node_T v_heap_insert(v_heap_T heaps, int value, int ver);
+// merges the two fibonnaci heaps
+v_heap_T merge_v_heaps( v_heap_T heap1, v_heap_T heap2);
+// returns the vertax value of the min of the heap
+int v_heap_min(v_heap_T heap1);
+//removes the minimum element from the node
+int v_extract_min(v_heap_T heap1);
+//prints the entire contense of the heap, include what its neighbor is
+void v_print_heap(v_heap_T heap);
+//decrease the key of the node the pointer points to to the specified value
+void v_heap_decrease_key(v_heap_T heap1, v_node_T node, int value);
+//creates a new heap and returns it 
+v_heap_T v_heap_new();
+#endif // VIOLATIONHEAP_H
