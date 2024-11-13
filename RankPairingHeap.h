@@ -1,5 +1,3 @@
-// RankPairingHeap.h
-
 #ifndef RANK_PAIRING_HEAP_H
 #define RANK_PAIRING_HEAP_H
 
@@ -16,51 +14,64 @@ public:
     public:
         KeyType key;
         int rank;
-        Node* child;
-        Node* sibling;
+        Node* parent;
+        Node* leftChild;   // Half-order: leftChild pointer
+        Node* rightSibling; // Half-order: rightSibling pointer
 
+        // Node constructor initializes key and sets default values for pointers and rank
         Node(const KeyType& key)
-            : key(key), rank(0), child(nullptr), sibling(nullptr) {}
+            : key(key), rank(0), parent(nullptr), leftChild(nullptr), rightSibling(nullptr) {}
     };
 
-    // Constructor
+    // Constructor initializes an empty heap
     RankPairingHeap() : root(nullptr) {}
 
-    // Destructor
+    // Destructor cleans up all nodes in the heap
     ~RankPairingHeap() {
         deleteAll(root);
     }
 
-    // Inserts a key into the heap and returns a pointer to the node
+    // Inserts a key into the heap
     void Insert(const KeyType& key) {
         Node* node = new Node(key);
-        root = meld(root, node); // Melds the new node with the existing heap.
+        root = meld(root, node); // Melds the new node with the existing heap
     }
 
     // Deletes a node from the heap
     void Delete(const KeyType& key) {
         Node* node = Search(root, key);
-        if (node == nullptr) {
+        if (!node) {
             std::cout << "Error: Key not found." << std::endl;
             return;
         }
-        Decreasenode(node, std::numeric_limits<KeyType>::min()); //Decreases the node's key to the minimum possible value, effectively moving it to the root.
+        DecreaseKey(key, std::numeric_limits<KeyType>::min()); //Decreases the node's key to the minimum possible value, effectively moving it to the root.
         ExtractMin(); // Calls ExtractMin to remove it from the heap.
     }
 
     // Decreases the key of a node with the given key to newKey
     void DecreaseKey(const KeyType& key, const KeyType& newKey) {
         Node* node = Search(root, key);
-        if (node == nullptr) {
-            std::cout << "Error: Key not found." << std::endl;
+        if (!node || newKey > node->key) {
+            std::cout << "Error: Invalid DecreaseKey operation." << std::endl;
             return;
         }
-        Decreasenode(node, newKey);
+        node->key = newKey;
+        if (node != root) {
+            cut(node); // Detaches node from parent and melds it back to the root
+            root = meld(root, node);
+
+            // Propagate rank adjustments up the parent chain
+            Node* parent = node->parent;
+            while (parent && parent->rank > 0) {
+                parent->rank = calculateNewRank(parent); // Adjust rank based on RP-Heap rules
+                parent = parent->parent;
+            }
+        }
     }
 
     // Extracts the minimum key from the heap and removes it
     KeyType ExtractMin() {
-        if (root == nullptr) {
+        if (!root) {
             std::cout << "Error: Heap is empty." << std::endl;
             return KeyType();
         }
@@ -68,12 +79,12 @@ public:
         KeyType minKey = root->key;
         Node* oldRoot = root;
         // Reconstructs the heap by performing a two-pass meld on the root's children.
-        root = twoPassMeld(root->child);
+        root = twoPassMeld(root->leftChild);
         delete oldRoot;
         return minKey;
     }
 
-    // Searches for a node with the given key
+    // Checks if a node with the given key exists in the heap
     bool Contains(const KeyType& key) {
         return Search(root, key) != nullptr;
     }
@@ -81,127 +92,108 @@ public:
 private:
     Node* root;
 
-    // Melds two heaps and returns the new root
+    // Melds two heaps with half-order structure and rank considerations, returns the new root
     Node* meld(Node* h1, Node* h2) {
-        if (h1 == nullptr) return h2; // If h1 is empty, return h2
-        if (h2 == nullptr) return h1; // If h2 is empty, return h1
+        if (!h1) return h2;
+        if (!h2) return h1;
 
+        // Determine the new root based on the key values
         if (h1->key <= h2->key) {
-            // h1 has the smaller key; make h1 the root
-            h2->sibling = h1->child; 
-            h1->child = h2;          
-            h1->rank = h2->rank + 1; 
-            return h1;               
+            h2->rightSibling = h1->leftChild; // Set h2 as the left child of h1
+            h1->leftChild = h2;
+            h2->parent = h1;
+            // Only increment rank if both have the same rank
+            if (h1->rank == h2->rank) {
+                h1->rank++;
+            }
+            return h1;
         } else {
-            // h2 has the smaller key; make h2 the root
-            h1->sibling = h2->child;
-            h2->child = h1;          
-            h2->rank = h1->rank + 1; 
-            return h2;               
+            h1->rightSibling = h2->leftChild; // Set h1 as the left child of h2
+            h2->leftChild = h1;
+            h1->parent = h2;
+            // Only increment rank if both have the same rank
+            if (h1->rank == h2->rank) {
+                h2->rank++;
+            }
+            return h2;
         }
     }
 
-    // Rebuild the heap after Extract-Min
+    // Two-pass melding to maintain heap structure after ExtractMin
     Node* twoPassMeld(Node* firstSibling) {
-        if (firstSibling == nullptr || firstSibling->sibling == nullptr) {
-            return firstSibling;
-        }
+        if (!firstSibling || !firstSibling->rightSibling) return firstSibling;
 
-        // Pairwise Melding: By pairing nodes, we reduce the number of separate trees, which helps maintain a balanced heap structure.
+        // Pairing phase: By pairing nodes, we reduce the number of separate trees, which helps maintain a balanced heap structure.
         std::vector<Node*> trees;
-        while (firstSibling != nullptr) {
+        while (firstSibling) {
             Node* a = firstSibling;
-            Node* b = firstSibling->sibling;
-            firstSibling = (b != nullptr) ? b->sibling : nullptr;
+            Node* b = firstSibling->rightSibling;
+            firstSibling = (b) ? b->rightSibling : nullptr;
 
-            a->sibling = nullptr;
-            if (b != nullptr) {
-                b->sibling = nullptr;
-                trees.push_back(meld(a, b));
+            a->rightSibling = nullptr;
+            if (b) {
+                b->rightSibling = nullptr;
+                trees.push_back(meld(a, b)); // Meld pairs of trees
             } else {
                 trees.push_back(a);
             }
         }
 
-        // Meld all trees in forward order to form a single heap
+        // Second pass to meld all resulting trees into a single heap
         Node* result = nullptr;
         for (Node* tree : trees) {
             result = meld(result, tree);
         }
 
-        return result; // The new root after melding.
+        return result; // Returns the new root after melding
     }
 
-    // Decreases the key of a given node
-    void Decreasenode(Node* node, const KeyType& newKey) {
-        //Checks if the node is valid and if the new key is not greater than the current key.
-        if (node == nullptr) {
-            std::cout << "Error: Node is null." << std::endl;
-            return;
-        }
-        if (newKey > node->key) {
-            std::cout << "Error: New key is greater than current key." << std::endl;
-            return;
-        }
-        // If the node is not the root, cuts it from its current position and melds it back into the heap to maintain the heap property.
-        node->key = newKey;
-        if (node != root) {
-            cut(node);
-            root = meld(root, node);
-        }
-    }
-
-    // Cuts a node from its parent
+    // Cuts a node from its parent and melds it with the root
     void cut(Node* node) {
-        Node* parent = findParent(root, node); // Find the parent with findParent function.
-        if (parent != nullptr) {
-            // Remove node from the child list of its parent
-            if (parent->child == node) {
-                parent->child = node->sibling;
+        Node* parent = node->parent;
+        if (parent) {
+            // Remove node from the left child list of its parent
+            if (parent->leftChild == node) {
+                parent->leftChild = node->rightSibling;
             } else {
-                Node* curr = parent->child;
-                while (curr->sibling != node) {
-                    curr = curr->sibling;
+                Node* curr = parent->leftChild;
+                while (curr->rightSibling != node) {
+                    curr = curr->rightSibling;
                 }
-                curr->sibling = node->sibling;
+                curr->rightSibling = node->rightSibling;
             }
-            node->sibling = nullptr;
+            node->parent = nullptr;
+            node->rightSibling = nullptr;
         }
     }
 
-    // Finds the parent of a node (used in DecreaseKey)
-    Node* findParent(Node* current, Node* target) {
-        if (current == nullptr) return nullptr;
-        for (Node* child = current->child; child != nullptr; child = child->sibling) {
-            // If a child matches the target, returns the current node as the parent.
-            if (child == target) {
-                return current;
-            }
-            // Recursively searches in the child subtrees.
-            Node* parent = findParent(child, target);
-            if (parent != nullptr) {
-                return parent;
-            }
+    // Adjusts the rank of a node based on its left child and right sibling
+    int calculateNewRank(Node* node) {
+        int rank = 0;
+        Node* child = node->leftChild;
+        while (child) {
+            rank = std::max(rank, child->rank + 1);
+            child = child->rightSibling;
         }
-        return nullptr;
+        return rank;
     }
 
     // Recursively searches for a node with the given key
     Node* Search(Node* node, const KeyType& key) {
-        if (node == nullptr) return nullptr;
+        if (!node) return nullptr;
         if (node->key == key) return node;
 
-        Node* result = Search(node->child, key);
-        if (result != nullptr) return result;
+        Node* result = Search(node->leftChild, key);
+        if (result) return result;
 
-        return Search(node->sibling, key);
+        return Search(node->rightSibling, key);
     }
 
     // Recursively deletes all nodes to prevent memory leaks
     void deleteAll(Node* node) {
-        if (node != nullptr) {
-            deleteAll(node->child);
-            deleteAll(node->sibling);
+        if (node) {
+            deleteAll(node->leftChild);
+            deleteAll(node->rightSibling);
             delete node;
         }
     }
