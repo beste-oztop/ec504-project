@@ -129,7 +129,7 @@ void FibonacciHeap::consolidate() {
     }
 }
 
-void FibonacciHeap:: cut(Node* x, Node* y) {
+void FibonacciHeap::cut(Node* x, Node* y) {
     if (x->right == x) {
         y->child = nullptr;
     } else {
@@ -171,7 +171,7 @@ Node* MAKE_HEAP() {
     return nullptr;
 }
 
-void FibonacciHeap:: insert(int key) {
+void FibonacciHeap::insert(int key) {
     // New elements should be inserted to the right of the current minimum
     Node* node = new Node(key);
     if (min == nullptr) { // empty heap
@@ -194,7 +194,7 @@ Node* FibonacciHeap::minimum() {
     return min;
 }
 
-Node* FibonacciHeap:: extractMin() {
+Node* FibonacciHeap::extractMin() {
     Node* z = min;
     if (z != nullptr) {
         if (z->child != nullptr) {
