@@ -4,6 +4,9 @@
 #include <climits> // For INT_MIN
 #include <cmath> // For Log operation
 #include <vector>
+#include <utility>
+#include <string>
+#include <list>
 
 
 /*
@@ -65,7 +68,9 @@
 
  */
 
-void FibonacciHeap::link(Node* y, Node* x) {
+
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::link(Node* y, Node* x) {
     y->left->right = y->right;
     y->right->left = y->left;
     y->parent = x;
@@ -83,7 +88,8 @@ void FibonacciHeap::link(Node* y, Node* x) {
     y->marked = false;
 }
 
-void FibonacciHeap::consolidate() {
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::consolidate(){
     int maxDegree = std::log2(nodeCount) + 1;
     std::vector<Node*> degreeArray(maxDegree + 1, nullptr);
 
@@ -129,7 +135,8 @@ void FibonacciHeap::consolidate() {
     }
 }
 
-void FibonacciHeap::cut(Node* x, Node* y) {
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::cut(Node* x, Node* y)  {
     if (x->right == x) {
         y->child = nullptr;
     } else {
@@ -151,7 +158,8 @@ void FibonacciHeap::cut(Node* x, Node* y) {
     x->marked = false;
 }
 
-void FibonacciHeap::cascadingCut(Node* y) {
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::cascadingCut(Node* y){
     Node* z = y->parent;
     if (z != nullptr) {
         if (!y->marked) {
@@ -166,23 +174,25 @@ void FibonacciHeap::cascadingCut(Node* y) {
 
 
 
-
 Node* MAKE_HEAP() {
     return nullptr;
 }
 
-void FibonacciHeap::insert(int key) {
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::insert(Entry& entry) {
     // New elements should be inserted to the right of the current minimum
-    Node* node = new Node(key);
-    if (min == nullptr) { // empty heap
+    Node* node = new Node(entry->_key);
+    node->entry = entry;
+    entry->_node = node;
+
+    if (!min) {
         min = node;
+        node->left = node->right = node;
     } else {
         node->right = min->right;
         node->left = min;
         min->right->left = node;
         min->right = node;
-
-        // Update the minimum node if the new node has a smaller key
         if (node->key < min->key) {
             min = node;
         }
@@ -190,48 +200,52 @@ void FibonacciHeap::insert(int key) {
     nodeCount++;
 }
 
-Node* FibonacciHeap::minimum() {
-    return min;
+template <typename Key, typename Value>
+typename FibonacciHeap<Key, Value>::Entry FibonacciHeap<Key, Value>::minimum() {
+    if (!min) throw Exception("Heap is empty");
+    return min->entry;
 }
 
-Node* FibonacciHeap::extractMin() {
+template <typename Key, typename Value>
+typename FibonacciHeap<Key, Value>::Entry FibonacciHeap<Key, Value>::extractMin() {
+    if (!min) throw Exception("Heap is empty");
     Node* z = min;
-    if (z != nullptr) {
-        if (z->child != nullptr) {
-            Node* child = z->child;
-            do {
-                Node* nextChild = child->right;
-                child->left->right = child->right;
-                child->right->left = child->left;
+    if (z->child) {
+        Node* child = z->child;
+        do {
+            Node* nextChild = child->right;
+            child->left->right = child->right;
+            child->right->left = child->left;
 
-                child->right = min;
-                child->left = min->left;
-                min->left->right = child;
-                min->left = child;
-                child->parent = nullptr;
-
-                child = nextChild;
-            } while (child != z->child);
-        }
-
-        z->left->right = z->right;
-        z->right->left = z->left;
-
-        if (z == z->right) {
-            min = nullptr;
-        } else {
-            min = z->right;
-            consolidate();
-        }
-        nodeCount--;
+            child->right = min->right;
+            child->left = min;
+            min->right->left = child;
+            min->right = child;
+            child->parent = nullptr;
+            child = nextChild;
+        } while (child != z->child);
     }
-    return z;
+
+    z->left->right = z->right;
+    z->right->left = z->left;
+
+    if (z == z->right) {
+        min = nullptr;
+    } else {
+        min = z->right;
+        consolidate();
+    }
+    nodeCount--;
+    Entry extractedEntry = z->entry;
+    delete z;
+    return extractedEntry;
 }
 
-void FibonacciHeap::unionHeap(FibonacciHeap& other) {
-    if (other.min == nullptr) return;
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::unionHeap(FibonacciHeap& other) {
+    if (!other.min) return;
 
-    if (min == nullptr) {
+    if (!min) {
         min = other.min;
     } else {
         min->right->left = other.min->left;
@@ -248,14 +262,15 @@ void FibonacciHeap::unionHeap(FibonacciHeap& other) {
     other.nodeCount = 0;
 }
 
-void FibonacciHeap::decreaseKey(Node* x, int k) {
-    if (k > x->key) {
-        std::cerr << "New key is greater than current key" << std::endl;
-        return;
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::decreaseKey(Entry& entry, Key newKey) {
+    Node* x = entry->_node;
+    if (!x || newKey > x->key) {
+        throw Exception("New key is greater than current key");
     }
-    x->key = k;
+    x->key = newKey;
     Node* y = x->parent;
-    if (y != nullptr && x->key < y->key) {
+    if (y && x->key < y->key) {
         cut(x, y);
         cascadingCut(y);
     }
@@ -264,31 +279,19 @@ void FibonacciHeap::decreaseKey(Node* x, int k) {
     }
 }
 
-void FibonacciHeap::deleteNode(Node* x) {
-    decreaseKey(x, INT_MIN);
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::deleteNode(Node* node) {
+    decreaseKey(node->entry, std::numeric_limits<Key>::min());
     extractMin();
 }
 
-
-void FibonacciHeap::printHeap(Node* node, int depth)  {
-    if (node == nullptr) return;
-    Node* start = node;
-    do {
-        for (int i = 0; i < depth; i++) std::cout << "  ";
-        std::cout << node->key << (node->marked ? "*" : "") << "\n";
-        if (node->child != nullptr) {
-            printHeap(node->child, depth + 1);
-        }
-        node = node->right;
-    } while (node != start);
-}
-
-void FibonacciHeap::freeNodes(Node* node) {
-    if (node == nullptr) return;
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::freeNodes(Node* node) {
+    if (!node) return;
     Node* start = node;
     do {
         Node* child = node->child;
-        if (child != nullptr) {
+        if (child) {
             freeNodes(child);
         }
         Node* next = node->right;
@@ -297,4 +300,45 @@ void FibonacciHeap::freeNodes(Node* node) {
     } while (node != start);
 }
 
-int FibonacciHeap::size() { return nodeCount; }
+
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::freeHeap() {
+    freeNodes(min);
+    min = nullptr;
+    nodeCount = 0;
+}
+
+
+template <typename Key, typename Value>
+void FibonacciHeap<Key, Value>::printHeap(Node* node, int depth) {
+    if (!node) return;
+
+    Node* start = node;
+    do {
+        // Indentation for depth levels
+        for (int i = 0; i < depth; i++) std::cout << "  ";
+
+        // Print the key and value (assuming Entry has key and value methods)
+        std::cout << node->entry.key() << " -> " << node->entry.value()
+                  << (node->marked ? " *" : "") << "\n";
+
+        // Recursively print the child nodes
+        if (node->child) {
+            printHeap(node->child, depth + 1);
+        }
+
+        // Move to the next node in the circular doubly linked list
+        node = node->right;
+    } while (node != start); // Loop until we reach the starting node again
+}
+
+
+template <typename Key, typename Value>
+FibonacciHeap<Key, Value>* makeHeap() {
+    return new FibonacciHeap<Key, Value>();
+}
+
+template <typename Key, typename Value>
+int FibonacciHeap<Key, Value>::size() {
+    return nodeCount;
+}

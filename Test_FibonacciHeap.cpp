@@ -1,59 +1,51 @@
 #include "FibonacciHeap.h"
 #include <iostream>
+#include <string>
 
 int main() {
+    // Create a Fibonacci Heap instance
+    FibonacciHeap<int, std::string> fibHeap;
 
-    // I will follow the example we had in class
-    // Create a Fibonacci Heap
-    FibonacciHeap heap;
+    // Create and insert entries
+    auto entry1 = FibonacciHeap<int, std::string>::makeEntry(10, "Ten");
+    auto entry2 = FibonacciHeap<int, std::string>::makeEntry(5, "Five");
+    auto entry3 = FibonacciHeap<int, std::string>::makeEntry(20, "Twenty");
+    auto entry4 = FibonacciHeap<int, std::string>::makeEntry(15, "Fifteen");
 
-    // Insert elements into the heap
-    // New elements should be inserted to the right of the current minimum
-    heap.insert(10);
-    heap.insert(5);
-    heap.insert(7);
-    heap.insert(9);
-    heap.insert(20);
-    heap.insert(15);
-    heap.insert(17);
+    fibHeap.insert(entry1);
+    fibHeap.insert(entry2);
+    fibHeap.insert(entry3);
+    fibHeap.insert(entry4);
 
-
-    // Print the heap after insertions
-    std::cout << "Heap after insertions:\n";
-    heap.printHeap(heap.minimum(), 0);
+    std::cout << "Minimum key: " << fibHeap.minimum()->key() << std::endl;
 
     // Extract the minimum element
-    std::cout << "\nExtracting minimum...\n";
-    heap.extractMin();
+    auto minEntry = fibHeap.extractMin();
+    std::cout << "Extracted min: " << minEntry->key() << " -> " << minEntry->value() << std::endl;
 
-    // Print the heap after extracting the minimum
-    std::cout << "Heap after extracting minimum:\n";
-    heap.printHeap(heap.minimum(), 0);
+    std::cout << "New minimum key: " << fibHeap.minimum()->key() << std::endl;
 
-    // Decrease the key of the node with key 7 to 2
-    std::cout << "\nDecreasing key of 7 to 2...\n";
+    // Decrease a key
+    fibHeap.decreaseKey(entry3, 1);
+    std::cout << "After decreasing key, new minimum key: " << fibHeap.minimum()->key() << std::endl;
 
-    Node* nodeToDecrease = heap.minimum();
-    while (nodeToDecrease && nodeToDecrease->key != 7) {
-        nodeToDecrease = nodeToDecrease->right;
+    // Test union operation
+    FibonacciHeap<int, std::string> fibHeap2;
+    auto entry5 = FibonacciHeap<int, std::string>::makeEntry(30, "Thirty");
+    auto entry6 = FibonacciHeap<int, std::string>::makeEntry(25, "Twenty Five");
+
+    fibHeap2.insert(entry5);
+    fibHeap2.insert(entry6);
+
+    fibHeap.unionHeap(fibHeap2);
+
+    std::cout << "Minimum key after union: " << fibHeap.minimum()->key() << std::endl;
+
+    // Extract all elements to clean up the heap
+    while (fibHeap.size() > 0) {
+        auto min = fibHeap.extractMin();
+        std::cout << "Extracted: " << min->key() << " -> " << min->value() << std::endl;
     }
-    if (nodeToDecrease) {
-        heap.decreaseKey(nodeToDecrease, 2);
-    }
-
-    // Print the heap after decreasing key
-    std::cout << "Heap after decreasing key of 7 to 2:\n";
-    heap.printHeap(heap.minimum(), 0);
-
-
-    // Extract the minimum element for the second time
-    std::cout << "\nExtracting minimum...\n";
-    heap.extractMin();
-
-    // Print the heap after extracting the minimum for the second time
-    std::cout << "Heap after extracting minimum:\n";
-    heap.printHeap(heap.minimum(), 0);
-
 
     return 0;
 }
