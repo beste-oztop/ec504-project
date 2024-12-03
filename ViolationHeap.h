@@ -32,5 +32,8 @@ void print_heap(heap_v heap);
 // free memory
 void free_heap(heap_v *heap);
 
+int get_key(node_v node);
+
+int get_num_elements(heap_v heap);
 
 #endif // VIOLATIONHEAP_H

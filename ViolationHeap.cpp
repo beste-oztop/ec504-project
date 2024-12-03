@@ -32,6 +32,21 @@ void v_delete_min(V_heap *heap);
 
 void consolidate(V_heap *heap);
 
+void decrease_key(V_heap *heap, V_heap_node *node, int value);
+
+int extract_min(V_heap *heap);
+
+int get_key(node_v node) {
+    return node->key;
+}
+
+int get_num_elements(heap_v heap) {
+    if (heap == NULL) {
+        return 0;
+    }
+    return heap->num_elements;
+}
+
 // creates a new heap
 V_heap * create_heap() {
     V_heap *heap = (V_heap*)malloc(sizeof(*heap)); 
