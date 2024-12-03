@@ -37,102 +37,178 @@ void decrease_key(V_heap *heap, V_heap_node *node, int value);
 int extract_min(V_heap *heap);
 
 int get_key(node_v node) {
+    if (!node) {
+        fprintf(stderr, "Invalid node in get_key\n");
+        return -1;
+    }
     return node->key;
 }
 
 int get_num_elements(heap_v heap) {
-    if (heap == NULL) {
-        return 0;
+    if (!heap) {
+        fprintf(stderr, "Invalid heap in get_num_elements\n");
+        return -1;
     }
     return heap->num_elements;
 }
 
-// creates a new heap
-V_heap * create_heap() {
-    V_heap *heap = (V_heap*)malloc(sizeof(*heap)); 
+void validate_heap_structure(V_heap* heap) {
+    if (!heap || !heap->min) return;
+
+    V_heap_node* current = heap->min;
+    do {
+        if (current->down && current->down->left == nullptr) {
+            fprintf(stderr, "Invalid child list: x->down->left is null for node with key %d\n", current->key);
+        }
+        current = current->right;
+    } while (current != heap->min);
+}
+
+
+void validate_heap(V_heap* heap, const char* context) {
+    if (!heap) {
+        fprintf(stderr, "Heap is NULL: %s\n", context);
+        return;
+    }
+
+    printf("Validating heap: %s\n", context);
+
+    if (!heap->min) {
+        if (heap->num_elements != 0) {
+            fprintf(stderr, "Heap size mismatch: expected 0, but num_elements=%d\n", heap->num_elements);
+        }
+        return;
+    }
+
+    int count = 0;
+    V_heap_node* current = heap->min;
+    do {
+        if (!current) {
+            fprintf(stderr, "NULL node in root list at position %d: %s\n", count, context);
+            return;
+        }
+
+        printf("Node %d: key=%d, data=%d, left=%p, right=%p\n",
+               count, current->key, current->data, current->left, current->right);
+
+        // Check for cycles or invalid pointers
+        if (current->right == current) {
+            fprintf(stderr, "Cycle detected in root list at node %d: %s\n", count, context);
+            return;
+        }
+        current = current->right;
+        count++;
+    } while (current != heap->min);
+
+    if (count != heap->num_elements) {
+        fprintf(stderr, "Heap size mismatch: expected %d, found %d (context: %s)\n",
+                heap->num_elements, count, context);
+    }
+}
+
+
+void debug_root_list(V_heap* heap) {
+    if (!heap || !heap->min) {
+        printf("Root list is empty\n");
+        return;
+    }
+
+    printf("Root list:\n");
+    V_heap_node* current = heap->min;
+    int count = 0;
+    do {
+        if (!current) {
+            fprintf(stderr, "NULL node in root list at position %d\n", count);
+            break;
+        }
+        printf("Node %d: key=%d, data=%d, left=%p, right=%p\n",
+               count, current->key, current->data, current->left, current->right);
+        current = current->right;
+        count++;
+    } while (current != heap->min);
+
+    printf("Root list traversal complete: count = %d\n", count);
+}
+
+
+V_heap* create_heap() {
+    V_heap* heap = (V_heap*)malloc(sizeof(*heap));
+    if (!heap) {
+        perror("Heap allocation failed");
+        exit(EXIT_FAILURE);
+    }
     heap->min = nullptr;
     heap->last = nullptr;
-    heap->num_elements = 0; 
+    heap->num_elements = 0;
     return heap;
 }
 
-// freeing the children
-void free_children (V_heap_node *node){ 
-        V_heap_node *temp_child;
-        if(node == nullptr){
-                return;
-        }
-        while(node != nullptr){
-                free_children(node->down);
-                temp_child=node->right;
-                free(node);
-                node=temp_child;
-        }
+void free_children(V_heap_node* node) {
+    V_heap_node* temp_child;
+    while (node) {
+        free_children(node->down);
+        temp_child = node->right;
+        free(node);
+        node = temp_child;
+    }
 }
 
 // frees a heap 
-void free_heap(V_heap **heap){
-        if (heap == nullptr) {
-                return;
-        }
-        V_heap_node *minimum = (*heap)->min;
-        if(minimum == nullptr){
-                free(*heap);
-                heap = nullptr;
-                return;
-        }
-        V_heap_node *temp = minimum->right;
-        V_heap_node *next;
-
-        while(temp != minimum){
-                next = temp->right;
-                free_children(temp->down);
-                free(temp);
-                temp = next;
-        }
-        free_children(minimum->down);
-        free(minimum);
+void free_heap(V_heap** heap) {
+    if (!heap || !(*heap)) return;
+    V_heap_node* minimum = (*heap)->min;
+    if (!minimum) {
         free(*heap);
-        heap=nullptr;
+        *heap = nullptr;
+        return;
+    }
+    V_heap_node* temp = minimum->right;
+    V_heap_node* next;
+
+    while (temp != minimum) {
+        next = temp->right;
+        free_children(temp->down);
+        free(temp);
+        temp = next;
+    }
+    free_children(minimum->down);
+    free(minimum);
+    free(*heap);
+    *heap = nullptr;
 }
 /* inserts a node into the root list with the given key and value. */        
-V_heap_node *insert(V_heap *heap, int value, int key){
+V_heap_node* insert(V_heap* heap, int value, int key) {
+    V_heap_node* node = (V_heap_node*)malloc(sizeof(*node));
+    node->left = nullptr;
+    node->right = nullptr;
+    node->down = nullptr;
+    node->data = value;
+    node->key = key;
+    node->rank = 0;
 
-        V_heap_node *node = (V_heap_node* ) malloc(sizeof(*node));
-        node->left=nullptr;
-        node->right=nullptr;
-        node->down= nullptr;
-        node->data=value;
-        node->key=key;
-        node->rank=0;  
-
-        if (heap == nullptr) {
-                std::cout << "Incorrect initialization of the heap! " << std::endl;
-                return node;
-        }    
-
-        // if it is the first node
-        if (heap->min == nullptr){
-                heap->min = node;
-                heap->last = node;
-                node->right = node;
-        }
-        // if it's not the first node
-        else {
-                node->right = heap->min->right;
-                heap->min->right = node;
-
-                if (heap->min->right->right == heap->min){
-                        heap->last=heap->min->right;
-                }
-                if(value < heap->min->data){
-                        heap->last=heap->min;
-                        heap->min=node;
-                }
-        }
-        heap->num_elements++;
-        
+    if (!heap) {
+        fprintf(stderr, "Heap not initialized\n");
         return node;
+    }
+
+    if (!heap->min) {
+        heap->min = node;
+        heap->last = node;
+        node->right = node;
+    } else {
+        node->right = heap->min->right;
+        heap->min->right = node;
+
+        if (heap->min->right->right == heap->min) {
+            heap->last = heap->min->right;
+        }
+        if (value < heap->min->data) {
+            heap->last = heap->min;
+            heap->min = node;
+        }
+    }
+    heap->num_elements++;
+    return node;
 }
 
 // merges two heaps
@@ -163,11 +239,12 @@ V_heap *union_heaps( V_heap *heap1, V_heap *heap2){
 }
 
 // returns the key of the minimum element in the heap
-int V_heap_min(V_heap *heap){
-        if (heap == nullptr){
-                return -1;
-        }
-        return heap->min->key;
+int v_heap_min(heap_v heap) {
+    if (!heap || !heap->min) {
+        fprintf(stderr, "Heap is empty or not initialized\n");
+        return -1;
+    }
+    return heap->min->key;
 }
 
 // decreases key, cuts the child (if necassary)
@@ -230,7 +307,7 @@ void cut (V_heap *heap, V_heap_node *node){
 
 
         // push the children to the root list if any
-        if (node->down == nullptr){
+        if (node->down != nullptr){ // check this line 
                 if (is_active == 1) {
                         node->left->down = node->right;
                 }
@@ -328,41 +405,63 @@ void propagate(V_heap_node *node, int is_active){
         }
 }
 
-// extracts the minimum node
-int extract_min(V_heap *heap){
-
-        if(heap == nullptr){
-                return -1;
-        }
-        int minimum= heap->min->key;
-        v_delete_min(heap);
-
-        consolidate(heap);
-        
-        V_heap_node *temp, *previous;
-        V_heap_node *Vmin = nullptr;
-        V_heap_node *last = nullptr;
-        int current_min;
-
-        temp = heap->min->right;
-        previous = heap->min;
-        last = heap->last;
-        Vmin = heap->min;
-        // update min accordingly
-        while(temp != heap->min){
-                current_min = Vmin->data;
-                if (temp->data < current_min){
-                        Vmin = temp;
-                        last = previous;
-                }
-                previous = temp;
-                temp = temp->right;
-        }
-        heap->last = last;
-        heap->min = Vmin;
-
-        return minimum;
+void debug_heap_state(const V_heap *heap, const char *message) {
+    printf("%s\n", message);
+    printf("Heap: num_elements = %d\n", heap->num_elements);
+    if (heap->min) {
+        printf("Heap min: key = %d, data = %d, rank = %d\n",
+               heap->min->key, heap->min->data, heap->min->rank);
+    } else {
+        printf("Heap min is NULL\n");
+    }
+    if (heap->last) {
+        printf("Heap last: key = %d\n", heap->last->key);
+    } else {
+        printf("Heap last is NULL\n");
+    }
 }
+
+
+
+// extracts the minimum node
+int extract_min(V_heap* heap) {
+
+    std::cout << std::endl << "in extract min " << std::endl;
+    if (!heap || heap->num_elements == 0 || heap->min == nullptr) {
+        fprintf(stderr, "Cannot extract min: Heap is empty\n");
+        // return -1;
+    }
+    if (get_num_elements(heap)>0 and heap->min==nullptr){
+        std::cout << "Invalid heap structure! min is null, but heap has elements. " << std::endl;
+        std::cout.flush();
+        return -1;
+    }
+
+    int minimum_key = heap->min->key;
+
+    std::cout << "helo im in delete min";
+    v_delete_min(heap);
+    std::cout << ", gbye im out " << std::endl;
+
+    if (heap->num_elements > 0) {
+        std::cout << "helo im in consolidate ";
+        std::cout.flush();
+        validate_heap_structure(heap);
+        consolidate(heap);
+        validate_heap_structure(heap);
+        std::cout << ", gbye im out " << std::endl;
+    } else {
+        std::cout <<  "Heap is now empty" << std::endl;
+        std::cout.flush();
+    }
+    std::cout << "done" << std::endl ;
+    std::cout.flush();
+
+    return minimum_key;
+}
+
+
+
 
 // update the nodes that point to deleted node pointers
 static inline void change_previous(V_heap_node **heaplist,V_heap_node* node){
@@ -375,6 +474,7 @@ static inline void change_previous(V_heap_node **heaplist,V_heap_node* node){
         }
 }
 
+
 V_heap_node *update_pointers(V_heap_node **heaplist,V_heap_node* previous_a, V_heap_node *node_a){
         V_heap_node *parent=nullptr, *first=nullptr, *second=nullptr, *previous2=nullptr,
                *previous1=nullptr, *node_b, *node_c, *previous_b,
@@ -385,6 +485,12 @@ V_heap_node *update_pointers(V_heap_node **heaplist,V_heap_node* previous_a, V_h
         node_c=heaplist[rank*4+2];
         previous_b=heaplist[rank*4+1];
         previous_c=heaplist[rank*4+3];
+
+        if (node_a == NULL || node_b == NULL || node_c == NULL) {
+                fprintf(stderr, "Invalid nodes in update_pointers\n");
+                return NULL;
+        }
+
 
         if (node_a->data >= node_b->data) {
                 second=node_a;
@@ -448,90 +554,124 @@ V_heap_node *update_pointers(V_heap_node **heaplist,V_heap_node* previous_a, V_h
 }
 
 // run consolidate
-void consolidate(V_heap *heap){
-        /*compute the number of nodes in the heaplist*/
-        int size=ceil(log(heap->num_elements)/LN2)*6+4;
-        if(size==0){
-                return;
-        }
-        /* create a list to store the nodes during the reformating process */ 
-        // V_heap_node **heaplist= calloc(size, sizeof(*heaplist));
-        V_heap_node **heaplist = (V_heap_node**)calloc(size, sizeof(*heaplist)); // Cast to V_heap_node**
+void consolidate(V_heap* heap) {
+    if (!heap || heap->num_elements == 0) return;
 
-        V_heap_node *current=heap->min, *previous=heap->last;
-        int rank = current->rank,i;
-        /* loop as long as the current node isn't in the heaplist*/
-        while((current!=(heaplist[rank*4])) && (current!=(heaplist[rank*4+2]))){
-                /* if there is space in the heaplist at currents rank of rank +1
-                 * put it there */
-                if (heaplist[rank*4]==nullptr){
-                        heaplist[rank*4]=current;
-                        heaplist[rank*4+1]=previous; 
-                        previous=current;
-                        current=current->right;
+    validate_heap_structure(heap);
+
+    int max_rank = (int)(log2(heap->num_elements)) + 1;
+    V_heap_node* ranks[max_rank];
+    memset(ranks, 0, sizeof(ranks));
+
+    V_heap_node* current = heap->min;
+    do {
+        V_heap_node* x = current;
+        int rank = x->rank;
+
+        while (ranks[rank] != NULL) {
+            V_heap_node* y = ranks[rank];         
+            if (x->key > y->key) {              
+                V_heap_node* temp = x;
+                x = y;
+                y = temp;
+            }
+            // Link y under x
+            if (y->left){
+                if (y->left->right != nullptr) {
+                    y->left->right = y->right;
                 }
-                else if (heaplist[rank*4+2]==nullptr){
-                        heaplist[rank*4+2]=current;
-                        heaplist[rank*4+3]=previous;
-                        previous=current;
-                        current=current->right;
+            }
+            if (y->right){ 
+                if (y->right->left) {
+                    y->right->left = y->left;
                 }
-                /* if there isn't combine those three then set four spot in the
-                 * heaplist with the former rank of current to nullptr. use the
-                 * root of the new heap/tree as the new current */
-                else {
-                        current=update_pointers(heaplist,previous,current);
-                        for(i=0;i<4;i++){
-                                heaplist[4*rank+i]=nullptr;
-                        }
-                        previous=current->left;
-                        current->left=nullptr;
+            }
+            if (y->right and y->left) {
+                y->left = y->right = NULL;
+            }
+            if (x->down) {
+                if (x->down->left && y->left){ 
+                    y->left = x->down->left;
+                    x->down->left = y;
+                    if (x->down->left->right){
+                        x->down->left->right = y;
+                    }
                 }
-                /*updatea rank if needed*/
-                rank=current->rank;
+            } else {
+                x->down = y;
+                y->right = y->left = y;
+            }
+            x->rank++;
+            ranks[rank] = NULL;
+            rank++;
         }
-        /* temporarily make the last node too be refomated the new min */
-        heap->min=current;
-        heap->last=previous;
-        free(heaplist);
+
+        ranks[rank] = x;
+        current = current->right;
+    } while (current != heap->min and current != nullptr);
+    heap->min = NULL;
+    heap->last = NULL;
+
+    validate_heap_structure(heap);
+
+    for (int i = 0; i < max_rank; i++) {
+        if (ranks[i]) {
+            if (!heap->min) {
+                heap->min = ranks[i];
+                heap->last = ranks[i];
+                ranks[i]->right = ranks[i];
+                ranks[i]->left = ranks[i];
+            } else {
+                ranks[i]->right = heap->min;
+                ranks[i]->left = heap->last;
+                heap->last->right = ranks[i];
+                heap->last = ranks[i];
+            }
+            if (ranks[i]->key < heap->min->key) {
+                heap->min = ranks[i];
+            }
+        }
+    }
+
+    validate_heap_structure(heap);
+    if (get_num_elements(heap)>0 and heap->min==nullptr){
+        std::cout << "Invalid heap structure! min is null. " << std::endl;
+        std::cout.flush();
+    }
 }
+void v_delete_min(V_heap* heap) {
+    if (!heap || !heap->min) {
+        fprintf(stderr, "Invalid heap or min node in v_delete_min\n");
+        return;
+    }
 
-// removes the minimum from the heap and pushes children to the root list
-void v_delete_min(V_heap *heap){
-        V_heap_node *minimum = heap->min;
-        V_heap_node *last_child = nullptr;
-        V_heap_node *previous_root=heap->last;
+    V_heap_node* minimum = heap->min;
 
-        // set all of the childrens left pointers to nullptr
-        while (minimum->down != nullptr){
-                last_child = minimum->down;
-                minimum->down->left=nullptr;
-                minimum->down = minimum->down->right;
-        }
-        if (previous_root == minimum){
-                // if no children
-                if(last_child == nullptr){
-                        heap->min = nullptr;
-                }
-                else {  // push children to the root list
-                        heap->min = minimum->down;
-                        last_child->right = minimum->down;
-                        heap->last = last_child;
-                }       
-        }
-        // other roots
-        else{   // if no children
-                if (last_child == nullptr) {
+    // printf("Removing min node: key=%d, data=%d\n", minimum->key, minimum->data);
+    if (minimum->down) {
+        // printf("Minimum has children, adding to root list\n");
+        V_heap_node* child = minimum->down;
+        do {
+            // printf("Adding child to root list: key=%d, data=%d\n", child->key, child->data);
+            child->left = heap->last;
+            heap->last->right = child;
+            heap->last = child;
+            child = child->right;
+        } while (child != minimum->down and child != nullptr);
+    }
 
-                        previous_root->right = minimum->right;
-                }
-                // if there are children
-                else {   
-                        previous_root->right = minimum->down;
-                        last_child->right = minimum->right;
-                }
-                heap->min = previous_root->right;
-        }
-        heap->num_elements--;
-        free(minimum);
-}       
+    // Update root list pointers
+    if (minimum->right == minimum) {  // Single node case
+        heap->min = nullptr;
+        heap->last = nullptr;
+    } else {
+        if (minimum->left) minimum->left->right = minimum->right;
+        if (minimum->right) minimum->right->left = minimum->left;
+
+        heap->min = minimum->right;
+        if (heap->last == minimum) heap->last = minimum->left;
+    }
+
+    heap->num_elements--;
+    free(minimum);
+}

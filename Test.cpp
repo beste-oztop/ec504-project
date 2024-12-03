@@ -2,8 +2,10 @@
 #include <unordered_map>
 #include <iostream>
 
+// credit: prof. sina karimi 
+
 int main() {
-    const unsigned int N = 1000;
+    const unsigned int N = 20;
     heap_v pq = create_heap();
     std::unordered_map<int, node_v> entries;
     entries.reserve(N);
@@ -18,6 +20,7 @@ int main() {
             std::cout.flush();
             for (unsigned long i = x; i < N; i++) {
                 entries[i] = insert(pq, (i + i) * x, i * 0.09);
+                validate_heap_structure(pq);
             }
 
             n = N / x;
@@ -75,3 +78,29 @@ int main() {
     std::cout << "\nGoodbye\n";
     return 0;
 }
+
+
+// int main() {
+//     heap_v heap = create_heap();
+
+//     // Insert elements
+//     insert(heap, 5, 1);
+//     insert(heap, 3, 2);
+//     insert(heap, 7, 3);
+
+//     // Extract the minimum
+//     printf("Min key: %d\n", v_heap_min(heap));
+//     printf("Extracting min: %d\n", extract_min(heap));
+
+//     // Decrease key of a node
+//     node_v node = insert(heap, 10, 4);
+//     decrease_key(heap, node, 1);
+
+//     // Validate heap
+//     validate_heap(heap, "After operations");
+
+//     // Free heap memory
+//     free_heap(&heap);
+
+//     return 0;
+// }

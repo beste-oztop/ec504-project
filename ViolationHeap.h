@@ -36,4 +36,8 @@ int get_key(node_v node);
 
 int get_num_elements(heap_v heap);
 
+void validate_heap(V_heap* heap, const char* context);
+
+void validate_heap_structure(V_heap* heap);
+
 #endif // VIOLATIONHEAP_H
