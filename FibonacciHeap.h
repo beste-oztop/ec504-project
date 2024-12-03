@@ -19,13 +19,15 @@ private:
     friend class FibonacciHeap<Key, Value>; // Grant access to private members
     Key _key;
     Value _value;
-    struct Node* _node; // Internal pointer to the heap node
+    typename FibonacciHeap<Key, Value>::Node* _node; // Correctly qualify Node type
 };
 
 
 template <typename Key, typename Value>
 class FibonacciHeap {// Fibonacci Heap: Node structure definition
-    struct Node {
+
+public:
+ struct Node {
         Key key;                    // The value of the node
         Node* parent;               // Pointer to the parent node
         Node* child;                // Pointer to the first child node

@@ -173,11 +173,6 @@ void FibonacciHeap<Key, Value>::cascadingCut(Node* y){
 
 
 
-
-Node* MAKE_HEAP() {
-    return nullptr;
-}
-
 template <typename Key, typename Value>
 void FibonacciHeap<Key, Value>::insert(Entry& entry) {
     // New elements should be inserted to the right of the current minimum
