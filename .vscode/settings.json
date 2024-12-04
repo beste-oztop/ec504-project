@@ -59,6 +59,7 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "fstream": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "unordered_set": "cpp"
     }
 }
