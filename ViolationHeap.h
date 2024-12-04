@@ -1,36 +1,38 @@
-#ifndef VIOLATIONHEAP_H
-#define VIOLATIONHEAP_H
+#ifndef VIOLATION
+#define VIOLATION
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+// implementation build on top of: https://violationheap.weebly.com
 
-typedef struct V_heap_node *node_v;
-typedef struct V_heap *heap_v;
+// main heap and node structs
+typedef struct v_node *v_node_T;
+typedef struct v_heap *v_heap_T;
 
-// create a new heap
-heap_v create_heap();
+// for debugging purposes
+void validate_heap_structure(v_heap *heap);
+
+// additional functionality for testbenching on Dijkstra's algorithm
+int get_key(v_node_T node);
+int get_num_elements(v_heap_T heap);
+
+// creates a new heap
+v_heap_T v_heap_new();
 
 // insert a node
-node_v insert(heap_v heaps, int value, int ver);
+v_node_T v_heap_insert(v_heap_T heaps, int value, int ver);
+
+// decrease a key
+void v_heap_decrease_key(v_heap_T heap1, v_node_T node, int value);
+
+// removes the minimum element
+int v_extract_min(v_heap_T heap1);
 
 // merges two heaps
-heap_v union_heaps( heap_v heap1, heap_v heap2);
+v_heap_T merge_v_heaps( v_heap_T heap1, v_heap_T heap2);
 
-// extracting the minimum element
-int extract_min(heap_v heap1);
+// returns the key value of the heap->min
+int v_heap_min(v_heap_T heap1);
 
-// decrease the key of the node
-void decrease_key(heap_v heap1, node_v node, int value);
+// frees memory
+void v_heap_free(v_heap_T *heap);
 
-// returns the vertax value of the min of the heap
-int v_heap_min(heap_v heap1);
-
-// prints the heap
-void print_heap(heap_v heap);
-
-// free memory
-void free_heap(heap_v *heap);
-
-
-#endif // VIOLATIONHEAP_H
+#endif // VIOLATION
