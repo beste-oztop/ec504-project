@@ -47,3 +47,9 @@ Unlike Fibonacci Heaps, Rank-pairing Heaps do not require complex adjustments li
 Violation Heaps are a specialized variant of heap data structures designed to handle specific constraints on heap operations, particularly for cases where violations (or exceptions to heap properties) are allowed temporarily but need to be corrected efficiently. These heaps support similar operations to other heap structures but allow for certain violations in the tree structure.
 The operations in Violation Heaps are similar in terms of time complexity to Fibonacci Heaps.
 * We implemented Violation Heap in ViolationHeap.h and ViolationHeap.cpp
+
+
+## Quake Heap
+Quake heap is another variation of Fibonacci heap where it utilizes tournament trees instead of heaps. The goal of quake heap is to reduce the complexity of Fibnacci heap and perform lazy insert and delete. During the extract min operation, it would reconstruct the data structure by making sure all the trees are in reasonable size and performs quaking for the trees with irregular and inefficient structure which can be caused by delete or decrease key operation. The implementation exists in quake_heap.hpp
+* We implemented quake heap in quake_heap.hpp
+* We teseted the implementation of it using main_QH.cpp for differnt graph sizes
